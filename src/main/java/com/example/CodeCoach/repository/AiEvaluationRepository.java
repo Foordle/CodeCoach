@@ -1,5 +1,7 @@
 package com.example.CodeCoach.repository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class AiEvaluationRepository {
     /**
      * AI 모델에게 코드 평가를 요청하고 피드백을 받습니다. (현재 더미)
@@ -16,7 +18,7 @@ public class AiEvaluationRepository {
             Thread.currentThread().interrupt();
         }
 
-        // Dummy Feedback Generation
+        // Dummy Feedback Generation --> 여기에다 gemini api연결해야댐~~!
         return String.format(
                 "요청된 기준 (코드 길이: %d, 목적: %s)에 따른 코드 전문가의 피드백입니다.\n\n" +
                         "✅ 일반 피드백:\n" +

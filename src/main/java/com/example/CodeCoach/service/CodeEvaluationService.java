@@ -1,4 +1,5 @@
 package com.example.CodeCoach.service;
+
 import com.example.CodeCoach.domain.EvaluationRequest;
 import com.example.CodeCoach.domain.EvaluationResult;
 import com.example.CodeCoach.repository.AiEvaluationRepository;
@@ -11,12 +12,12 @@ public class CodeEvaluationService {
 
     private final AiEvaluationRepository aiEvaluationRepository;
 
+
     public CodeEvaluationService(AiEvaluationRepository aiEvaluationRepository) {
         this.aiEvaluationRepository = aiEvaluationRepository;
     }
 
     public EvaluationResult evaluateCode(EvaluationRequest request) {
-        // Docker 실행 로직 여기에 (일단 생략)
 
         // 1. AI에게 전달할 프롬프트 구성
         String prompt = buildAiPrompt(request);
@@ -30,8 +31,8 @@ public class CodeEvaluationService {
 
         // 4. 결과 반환
         return new EvaluationResult(
-                "AI_ONLY", // 상태: 컴파일러 없이 AI 평가만 진행됨
-                "컴파일러를 사용하지 않고 AI 평가만 진행됨.", // 실행 결과 더미
+                "AI_ONLY",
+                "컴파일러를 사용하지 않고 AI 평가만 진행됨.",
                 score,
                 aiFeedback
         );
