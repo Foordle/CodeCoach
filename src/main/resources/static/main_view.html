@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코드 평가 시스템</title>
-    <!-- Tailwind CSS CDN 수정 --><script src="https://cdn.tailwindcss.com"></script> <!-- 여기가 올바른 CDN URL --><style>
+    <title>CodeCoach AI 평가 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
         /* Inter 폰트 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -12,17 +13,17 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* 코드 입력 영역 스타일 (마크다운 코드 블록 느낌) */
+        /* 코드 입력 영역 스타일 */
         #code-input {
             tab-size: 4;
             -moz-tab-size: 4;
             line-height: 1.5;
             padding: 1rem;
             border-radius: 0.5rem;
-            background-color: #1f2937; /* Darker slate */
-            color: #9ca3af; /* Light gray text for code */
+            background-color: #1f2937;
+            color: #9ca3af;
             font-family: monospace;
-            resize: none; /* 크기 조절 방지 */
+            resize: none;
             overflow-y: auto;
             min-height: 300px;
         }
@@ -33,7 +34,7 @@
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-y: auto;
-            white-space: pre-wrap; /* 줄바꿈 유지 */
+            white-space: pre-wrap;
             font-family: monospace;
         }
     </style>
@@ -44,8 +45,15 @@
 
     <h1 class="text-4xl font-extrabold mb-8 text-indigo-400">CodeCoach AI 평가 시스템</h1>
 
-    <!-- 1. 평가 기준 선택 드롭다운 -->
     <div class="flex flex-col sm:flex-row gap-4 mb-6">
+
+        <div class="flex-1">
+            <label for="lang-select" class="block text-sm font-medium mb-2 text-gray-300">언어 선택</label>
+            <select id="lang-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="JAVA" selected>Java</option>
+                <option value="CPP">C++</option>
+            </select>
+        </div>
 
         <div class="flex-1">
             <label for="arch-select" class="block text-sm font-medium mb-2 text-gray-300">아키텍처 패턴 선택</label>
@@ -67,13 +75,11 @@
         </div>
     </div>
 
-    <!-- 2. 코드 입력 영역 -->
     <div class="mb-6">
-        <label for="code-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 코드 입력 (Java / Github URL)</label>
-        <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 코드를 입력하거나, 곧 추가될 Github URL을 넣어주세요. (자동 들여쓰기 적용)"></textarea>
+        <label for="code-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 코드 입력 (Java / C++)</label>
+        <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 또는 C++ 코드를 입력하세요."></textarea>
     </div>
 
-    <!-- 3. RUN 버튼 및 상태 메시지 -->
     <div class="flex items-center justify-between mb-8">
         <button onclick="runEvaluation()" id="run-button"
                 class="px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -84,15 +90,13 @@
 
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- 4. 코드 실행 결과 (Console) -->
         <div>
             <h2 class="text-xl font-bold mb-3 text-gray-300">⚙️ Console Output (실행 결과)</h2>
             <pre id="console-output" class="result-panel bg-gray-800 text-green-400 border border-gray-700 shadow-inner">
-컴파일 및 프로그램 실행 결과가 여기에 표시됩니다.
+컴파일러를 연동하면 여기에 실행 결과가 표시됩니다. (현재는 더미)
 </pre>
         </div>
 
-        <!-- 5. AI 코드 평가 피드백 -->
         <div>
             <h2 class="text-xl font-bold mb-3 text-gray-300">🧠 AI Feedback (코드 평가)</h2>
             <div id="ai-feedback" class="result-panel bg-gray-800 text-yellow-300 border border-gray-700 shadow-inner">
@@ -105,35 +109,44 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const codeInput = document.getElementById('code-input');
+        const langSelect = document.getElementById('lang-select');
 
         // 1. 자동 들여쓰기 기능 구현
-        // Tab 키를 눌렀을 때 포커스를 잃지 않고 탭 간격으로 들여쓰기
         codeInput.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = this.selectionStart;
                 const end = this.selectionEnd;
-
-                // 탭 문자 삽입
                 this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
-
-                // 커서를 탭 문자 뒤로 이동
                 this.selectionStart = this.selectionEnd = start + 1;
             }
         });
 
-        // 2. 초기 더미 코드 삽입 (사용 편의를 위해)
-        codeInput.value =
-            `// 여기에 평가를 원하는 자바 코드를 넣어주세요.
+        // 2. 언어 변경 시 기본 코드 변경
+        const setPlaceholderCode = (lang) => {
+            if (lang === 'JAVA') {
+                codeInput.value =
+                    `// Java 코드를 입력하세요.
 public class Main {
     public static void main(String[] args) {
-        // Sample code to be evaluated
-        int a = 10;
-        int b = 20;
-        System.out.println("Result: " + (a + b));
+        int sum = 10 + 20;
+        System.out.println("Java Sum: " + sum);
     }
 }`;
+            } else if (lang === 'CPP') {
+                codeInput.value =
+                    `// C++ 코드를 입력하세요.
+#include <iostream>
+int main() {
+    int sum = 10 + 20;
+    std::cout << "C++ Sum: " << sum << std::endl;
+    return 0;
+}`;
+            }
+        };
 
+        langSelect.addEventListener('change', (e) => setPlaceholderCode(e.target.value));
+        setPlaceholderCode(langSelect.value); // 초기 코드 설정
     });
 
     // 3. RUN 버튼 클릭 시 실행될 함수
@@ -145,21 +158,17 @@ public class Main {
         const aiFeedback = document.getElementById('ai-feedback');
         const archSelect = document.getElementById('arch-select');
         const purposeSelect = document.getElementById('purpose-select');
+        const langSelect = document.getElementById('lang-select');
 
         // UI 초기화 및 로딩 상태 설정
         runButton.disabled = true;
         runButton.textContent = '처리 중...';
         statusMessage.className = 'text-sm text-yellow-500';
-        statusMessage.textContent = '코드 평가 서버에 요청 중입니다. 잠시만 기다려 주세요...';
+        statusMessage.textContent = 'AI 평가 서버에 요청 중입니다. 잠시만 기다려 주세요...';
         consoleOutput.textContent = '요청 전송...';
-        aiFeedback.textContent = '평가 기준: ' + archSelect.value + ' / ' + purposeSelect.value;
+        aiFeedback.textContent = '평가 기준: ' + langSelect.value + ' / ' + archSelect.value + ' / ' + purposeSelect.value;
 
-        // 🚨 백엔드 API 주소 (Spring Boot Controller의 @RequestMapping과 일치해야 함)
         const apiEndpoint = '/api/v1/evaluation';
-
-        // 🚨 현재는 Github URL만 입력받는 것을 가정하므로,
-        // 🚨 여기서는 입력된 텍스트를 Github URL로 간주하고 요청을 보냅니다.
-        const githubUrl = codeInput.value.trim();
 
         try {
             const response = await fetch(apiEndpoint, {
@@ -168,10 +177,10 @@ public class Main {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    githubUrl: githubUrl,
-                    // 추후 평가 기준도 payload에 포함될 수 있습니다.
+                    codeContent: codeInput.value, // 코드 내용 전송
                     architecturePattern: archSelect.value,
-                    evaluationPurpose: purposeSelect.value
+                    evaluationPurpose: purposeSelect.value,
+                    language: langSelect.value
                 })
             });
 
@@ -185,13 +194,17 @@ public class Main {
             statusMessage.className = 'text-sm text-green-400';
             statusMessage.textContent = `평가 완료! (상태: ${result.compileStatus})`;
 
+            // Console Output
+            consoleOutput.className = 'result-panel bg-gray-800 text-green-400 border border-gray-700 shadow-inner';
             consoleOutput.textContent = result.runOutput || '실행 결과 없음.';
 
+            // AI Feedback
+            aiFeedback.className = 'result-panel bg-gray-800 text-yellow-300 border border-gray-700 shadow-inner';
             aiFeedback.innerHTML = `
                     <p class="text-2xl font-bold mb-2 text-indigo-400">점수: ${result.score} / 100</p>
                     <p class="mb-3">상태: ${result.compileStatus}</p>
-                    <p><strong>AI 평가 요약:</strong></p>
-                    <p>이 부분은 AI 모델 호출 후, '평가 목적'에 따른 상세 피드백(예: "이 코드는 성능은 좋으나, 서비스 계층 분리가 부족합니다.")이 표시될 예정입니다.</p>
+                    <p><strong>AI 평가 상세:</strong></p>
+                    <pre class="whitespace-pre-wrap">${result.aiFeedback}</pre>
                 `;
 
         } catch (error) {
