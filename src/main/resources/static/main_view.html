@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코드 평가 시스템</title>
+    <!-- Tailwind CSS CDN 수정 --><script src="https://cdn.tailwindcss.com"></script> <!-- 여기가 올바른 CDN URL --><style>
+        /* Inter 폰트 설정 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* 코드 입력 영역 스타일 (마크다운 코드 블록 느낌) */
+        #code-input {
+            tab-size: 4;
+            -moz-tab-size: 4;
+            line-height: 1.5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #1f2937; /* Darker slate */
+            color: #9ca3af; /* Light gray text for code */
+            font-family: monospace;
+            resize: none; /* 크기 조절 방지 */
+            overflow-y: auto;
+            min-height: 300px;
+        }
+
+        /* 콘솔/피드백 창 스타일 */
+        .result-panel {
+            min-height: 200px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-y: auto;
+            white-space: pre-wrap; /* 줄바꿈 유지 */
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 sm:p-8">
+
+<div class="max-w-7xl mx-auto">
+
+    <h1 class="text-4xl font-extrabold mb-8 text-indigo-400">CodeCoach AI 평가 시스템</h1>
+
+    <!-- 1. 평가 기준 선택 드롭다운 -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+
+        <div class="flex-1">
+            <label for="arch-select" class="block text-sm font-medium mb-2 text-gray-300">아키텍처 패턴 선택</label>
+            <select id="arch-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="mvc">MVC (Model-View-Controller)</option>
+                <option value="rsvc" selected>RSVC (Repository-Service-Controller)</option>
+                <option value="layered">계층형 아키텍처</option>
+                <option value="monolithic">모놀리식 (단일 구조)</option>
+            </select>
+        </div>
+
+        <div class="flex-1">
+            <label for="purpose-select" class="block text-sm font-medium mb-2 text-gray-300">평가 목적 선택</label>
+            <select id="purpose-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="performance">성능 (코딩 테스트)</option>
+                <option value="maintainability" selected>유지보수성 & 확장성</option>
+                <option value="security">보안 및 견고성</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 2. 코드 입력 영역 -->
+    <div class="mb-6">
+        <label for="code-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 코드 입력 (Java / Github URL)</label>
+        <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 코드를 입력하거나, 곧 추가될 Github URL을 넣어주세요. (자동 들여쓰기 적용)"></textarea>
+    </div>
+
+    <!-- 3. RUN 버튼 및 상태 메시지 -->
+    <div class="flex items-center justify-between mb-8">
+        <button onclick="runEvaluation()" id="run-button"
+                class="px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            ▶ RUN & EVALUATE
+        </button>
+        <p id="status-message" class="text-sm text-gray-400">준비 완료. 코드를 입력하고 평가를 시작하세요.</p>
+    </div>
+
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 4. 코드 실행 결과 (Console) -->
+        <div>
+            <h2 class="text-xl font-bold mb-3 text-gray-300">⚙️ Console Output (실행 결과)</h2>
+            <pre id="console-output" class="result-panel bg-gray-800 text-green-400 border border-gray-700 shadow-inner">
+컴파일 및 프로그램 실행 결과가 여기에 표시됩니다.
+</pre>
+        </div>
+
+        <!-- 5. AI 코드 평가 피드백 -->
+        <div>
+            <h2 class="text-xl font-bold mb-3 text-gray-300">🧠 AI Feedback (코드 평가)</h2>
+            <div id="ai-feedback" class="result-panel bg-gray-800 text-yellow-300 border border-gray-700 shadow-inner">
+                AI 모델에 의한 평가 내용 (점수, 개선점 등)이 여기에 표시됩니다.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const codeInput = document.getElementById('code-input');
+
+        // 1. 자동 들여쓰기 기능 구현
+        // Tab 키를 눌렀을 때 포커스를 잃지 않고 탭 간격으로 들여쓰기
+        codeInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                // 탭 문자 삽입
+                this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+
+                // 커서를 탭 문자 뒤로 이동
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+
+        // 2. 초기 더미 코드 삽입 (사용 편의를 위해)
+        codeInput.value =
+            `// 여기에 평가를 원하는 자바 코드를 넣어주세요.
+public class Main {
+    public static void main(String[] args) {
+        // Sample code to be evaluated
+        int a = 10;
+        int b = 20;
+        System.out.println("Result: " + (a + b));
+    }
+}`;
+
+    });
+
+    // 3. RUN 버튼 클릭 시 실행될 함수
+    async function runEvaluation() {
+        const runButton = document.getElementById('run-button');
+        const codeInput = document.getElementById('code-input');
+        const statusMessage = document.getElementById('status-message');
+        const consoleOutput = document.getElementById('console-output');
+        const aiFeedback = document.getElementById('ai-feedback');
+        const archSelect = document.getElementById('arch-select');
+        const purposeSelect = document.getElementById('purpose-select');
+
+        // UI 초기화 및 로딩 상태 설정
+        runButton.disabled = true;
+        runButton.textContent = '처리 중...';
+        statusMessage.className = 'text-sm text-yellow-500';
+        statusMessage.textContent = '코드 평가 서버에 요청 중입니다. 잠시만 기다려 주세요...';
+        consoleOutput.textContent = '요청 전송...';
+        aiFeedback.textContent = '평가 기준: ' + archSelect.value + ' / ' + purposeSelect.value;
+
+        // 🚨 백엔드 API 주소 (Spring Boot Controller의 @RequestMapping과 일치해야 함)
+        const apiEndpoint = '/api/v1/evaluation';
+
+        // 🚨 현재는 Github URL만 입력받는 것을 가정하므로,
+        // 🚨 여기서는 입력된 텍스트를 Github URL로 간주하고 요청을 보냅니다.
+        const githubUrl = codeInput.value.trim();
+
+        try {
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    githubUrl: githubUrl,
+                    // 추후 평가 기준도 payload에 포함될 수 있습니다.
+                    architecturePattern: archSelect.value,
+                    evaluationPurpose: purposeSelect.value
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            // 4. 결과 출력
+            statusMessage.className = 'text-sm text-green-400';
+            statusMessage.textContent = `평가 완료! (상태: ${result.compileStatus})`;
+
+            consoleOutput.textContent = result.runOutput || '실행 결과 없음.';
+
+            aiFeedback.innerHTML = `
+                    <p class="text-2xl font-bold mb-2 text-indigo-400">점수: ${result.score} / 100</p>
+                    <p class="mb-3">상태: ${result.compileStatus}</p>
+                    <p><strong>AI 평가 요약:</strong></p>
+                    <p>이 부분은 AI 모델 호출 후, '평가 목적'에 따른 상세 피드백(예: "이 코드는 성능은 좋으나, 서비스 계층 분리가 부족합니다.")이 표시될 예정입니다.</p>
+                `;
+
+        } catch (error) {
+            statusMessage.className = 'text-sm text-red-500';
+            statusMessage.textContent = `요청 실패: ${error.message}`;
+            consoleOutput.textContent = `서버 연결 오류 또는 처리 실패: ${error.message}`;
+            aiFeedback.textContent = '평가 요청 중 심각한 오류가 발생했습니다.';
+        } finally {
+            // UI 원상 복구
+            runButton.disabled = false;
+            runButton.textContent = '▶ RUN & EVALUATE';
+        }
+    }
+</script>
+</body>
+</html>
