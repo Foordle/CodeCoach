@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CodeCoach AI 평가 시스템</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Inter 폰트 설정 */
@@ -42,12 +43,12 @@
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 sm:p-8">
 
 <div class="max-w-7xl mx-auto">
-
     <h1 class="text-4xl font-extrabold mb-8 text-indigo-400">CodeCoach AI 평가 시스템</h1>
 
-    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <!-- 📢 1. 평가 기준 및 모델 선택 섹션 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
 
-        <div class="flex-1">
+        <div class="col-span-1">
             <label for="lang-select" class="block text-sm font-medium mb-2 text-gray-300">언어 선택</label>
             <select id="lang-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
                 <option value="JAVA" selected>Java</option>
@@ -55,31 +56,63 @@
             </select>
         </div>
 
-        <div class="flex-1">
-            <label for="arch-select" class="block text-sm font-medium mb-2 text-gray-300">아키텍처 패턴 선택</label>
+        <div class="col-span-1">
+            <label for="arch-select" class="block text-sm font-medium mb-2 text-gray-300">아키텍처 패턴</label>
             <select id="arch-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
-                <option value="mvc">MVC (Model-View-Controller)</option>
-                <option value="rsvc" selected>RSVC (Repository-Service-Controller)</option>
-                <option value="layered">계층형 아키텍처</option>
-                <option value="monolithic">모놀리식 (단일 구조)</option>
+                <option value="mvc">MVC</option>
+                <option value="rsvc" selected>RSVC</option>
+                <option value="layered">계층형</option>
             </select>
         </div>
 
-        <div class="flex-1">
-            <label for="purpose-select" class="block text-sm font-medium mb-2 text-gray-300">평가 목적 선택</label>
+        <div class="col-span-1">
+            <label for="purpose-select" class="block text-sm font-medium mb-2 text-gray-300">평가 목적</label>
             <select id="purpose-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
-                <option value="performance">성능 (코딩 테스트)</option>
-                <option value="maintainability" selected>유지보수성 & 확장성</option>
+                <option value="performance" selected>성능 (Flash 권장)</option>
+                <option value="maintainability">유지보수성 (Pro 권장)</option>
                 <option value="security">보안 및 견고성</option>
+            </select>
+        </div>
+
+        <!-- 📢 모델 버전 직접 선택 -->
+        <div class="col-span-1">
+            <label for="model-select" class="block text-sm font-medium mb-2 text-gray-300">모델 버전</label>
+            <select id="model-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
             </select>
         </div>
     </div>
 
+    <!-- 📢 2. AI 파라미터 조절 섹션 (2열 그리드) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-800 p-4 rounded-lg shadow-inner">
+        <h3 class="col-span-full text-lg font-semibold text-indigo-300 mb-2">AI 응답 스타일 조절</h3>
+
+        <div class="col-span-1">
+            <label for="temp-select" class="block text-sm font-medium mb-2 text-gray-300">Temperature (랜덤성/창의성)</label>
+            <select id="temp-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="0.0">0.0 (논리적, 권장)</option>
+                <option value="0.5" selected>0.5 (균형)</option>
+                <option value="1.0">1.0 (창의적)</option>
+            </select>
+        </div>
+        <div class="col-span-1">
+            <label for="topP-select" class="block text-sm font-medium mb-2 text-gray-300">Top P (응답 다양성)</label>
+            <select id="topP-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+                <option value="0.5">0.5</option>
+                <option value="0.9" selected>0.9</option>
+                <option value="1.0">1.0 (최대 다양성)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 코드 입력 영역 -->
     <div class="mb-6">
         <label for="code-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 코드 입력 (Java / C++)</label>
         <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 또는 C++ 코드를 입력하세요."></textarea>
     </div>
 
+    <!-- RUN 버튼 및 상태 메시지 -->
     <div class="flex items-center justify-between mb-8">
         <button onclick="runEvaluation()" id="run-button"
                 class="px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -88,7 +121,7 @@
         <p id="status-message" class="text-sm text-gray-400">준비 완료. 코드를 입력하고 평가를 시작하세요.</p>
     </div>
 
-
+    <!-- 결과 영역 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
             <h2 class="text-xl font-bold mb-3 text-gray-300">⚙️ Console Output (실행 결과)</h2>
@@ -149,7 +182,7 @@ int main() {
         setPlaceholderCode(langSelect.value); // 초기 코드 설정
     });
 
-    // 3. RUN 버튼 클릭 시 실행될 함수
+    // 3. RUN 버튼 클릭 시 실행될 함수 (로그인 로직 제거)
     async function runEvaluation() {
         const runButton = document.getElementById('run-button');
         const codeInput = document.getElementById('code-input');
@@ -159,6 +192,11 @@ int main() {
         const archSelect = document.getElementById('arch-select');
         const purposeSelect = document.getElementById('purpose-select');
         const langSelect = document.getElementById('lang-select');
+
+        // 📢 AI 파라미터 DOM 요소
+        const modelSelect = document.getElementById('model-select');
+        const tempSelect = document.getElementById('temp-select');
+        const topPSelect = document.getElementById('topP-select');
 
         // UI 초기화 및 로딩 상태 설정
         runButton.disabled = true;
@@ -177,10 +215,15 @@ int main() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    codeContent: codeInput.value, // 코드 내용 전송
+                    codeContent: codeInput.value,
                     architecturePattern: archSelect.value,
                     evaluationPurpose: purposeSelect.value,
-                    language: langSelect.value
+                    language: langSelect.value,
+
+                    // 📢 AI 파라미터와 모델 이름 전송
+                    modelName: modelSelect.value,
+                    temperature: parseFloat(tempSelect.value),
+                    topP: parseFloat(topPSelect.value)
                 })
             });
 
