@@ -1,14 +1,13 @@
-
 # 범용적인 환경인 Ubuntu를 기반으로 시작
-FROM ubuntu22.04
+FROM ubuntu:22.04
 
 # 환경 업데이트 및 필요한 패키지 설치
 # openjdk-17-jdk (Java 컴파일러) 및 g++ (C++ 컴파일러) 설치
-RUN apt-get update && 
-    DEBIAN_FRONTEND=noninteractive apt-get install -y 
-    openjdk-17-jdk 
-    g++ 
-    && rm -rf varlibaptlists
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    openjdk-17-jdk \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# 작업 디렉토리 설정 코드가 마운트될 위치
-WORKDIR app
+# 작업 디렉토리 설정: 코드가 마운트될 위치
+WORKDIR /app
