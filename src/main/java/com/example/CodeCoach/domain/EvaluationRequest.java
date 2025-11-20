@@ -9,6 +9,7 @@ public class EvaluationRequest {
     private Float temperature;
     private Float topP;
     private String modelName;
+    private String branchName;
 
     public EvaluationRequest() {}
 
@@ -22,10 +23,14 @@ public class EvaluationRequest {
     }
     public String getGithubUrl() { return githubUrl; }
     public void setGithubUrl(String githubUrl) { this.githubUrl = githubUrl; }
+
+    public String getBranchName() { return branchName; }
+    public void setBranchName(String branchName) { this.branchName = branchName; }
+
+
     public String getArchitecturePattern() {
         return architecturePattern;
     }
-
     public void setArchitecturePattern(String architecturePattern) {
         this.architecturePattern = architecturePattern;
     }
@@ -33,7 +38,6 @@ public class EvaluationRequest {
     public String getEvaluationPurpose() {
         return evaluationPurpose;
     }
-
     public void setEvaluationPurpose(String evaluationPurpose) {
         this.evaluationPurpose = evaluationPurpose;
     }
@@ -41,7 +45,6 @@ public class EvaluationRequest {
     public String getLanguage() {
         return language;
     }
-
     public void setLanguage(String language) {
         this.language = language;
     }

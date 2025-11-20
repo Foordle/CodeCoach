@@ -145,6 +145,10 @@
         <label for="url-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 GitHub Repository URL 입력</label>
         <input type="text" id="url-input" placeholder="ex) https://github.com/user/repo"
                class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+        <label for="branch-input" class="block text-sm font-medium mb-2 text-gray-300">브랜치 이름 입력 (선택 사항)</label>
+        <input type="text" id="branch-input" placeholder="ex) dev, feature/new-logic (미입력 시 main 브랜치 사용)"
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+
         <p class="text-xs text-gray-500 mt-1">저장소의 전체 파일을 분석하여 평가합니다. (Public Repository만 지원)</p>
     </div>
 
@@ -280,6 +284,7 @@ int main() {
         const runButton = document.getElementById('run-button');
         const codeInput = document.getElementById('code-input');
         const urlInput = document.getElementById('url-input');
+        const branchInput = document.getElementById('branch-input');
         const statusMessage = document.getElementById('status-message');
         const consoleOutput = document.getElementById('console-output');
         const aiFeedback = document.getElementById('ai-feedback');
@@ -333,6 +338,7 @@ int main() {
             }
             payload.githubUrl = urlInput.value;
             payload.codeContent = null;
+            payload.branchName = branchInput.value.trim() || 'main'; // 미입력 시 'main' 기본값 설정
             consoleOutput.textContent = 'GitHub 저장소 파일 목록을 조회하고 코드를 다운로드 중입니다...';
         }
 

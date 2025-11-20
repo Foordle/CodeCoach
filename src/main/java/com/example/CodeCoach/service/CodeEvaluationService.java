@@ -88,13 +88,14 @@ public class CodeEvaluationService {
 
             try {
                 // 📢 Git Clone 및 파일 추출 실행 (Docker 실행 없음)
-                String codeResult = codeRunnerRepository.cloneAndExtractCode(request.getGithubUrl(), language);
+                String codeResult = codeRunnerRepository.cloneAndExtractCode(request.getGithubUrl(), language, request.getBranchName());
 
                 if (codeResult.startsWith("ERROR:")) {
                     runOutput = codeResult; // ERROR: 메시지를 콘솔 출력에 저장
                     compileStatus = "GIT_FAIL";
                     fullCodeContent = null; // AI 평가를 막기 위해 null 설정
                 } else {
+                    fullCodeContent = codeResult;
                     // 파일 개수 세기 (정규표현식 헬퍼 메서드 사용)
                     int fileCount = countFiles(fullCodeContent);
                     runOutput = "GitHub Repository 파일 추출 성공. 총 파일 수: " + fileCount + "개";

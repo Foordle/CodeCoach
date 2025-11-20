@@ -65,7 +65,7 @@ public class CodeRunnerRepository {
     /**
      * Git Repository를 복제하고, 그 안의 모든 코드를 읽어 하나의 문자열로 결합합니다.
      */
-    public String cloneAndExtractCode(String githubUrl, String language) throws IOException, InterruptedException {
+    public String cloneAndExtractCode(String githubUrl, String language, String branchName) throws IOException, InterruptedException {
         String repoName = githubUrl.substring(githubUrl.lastIndexOf('/') + 1).replace(".git", "");
         Path tempDirPath = Paths.get(TEMP_REPO_DIR).toAbsolutePath().resolve(repoName);
 
@@ -76,7 +76,7 @@ public class CodeRunnerRepository {
         Files.createDirectories(tempDirPath.getParent());
 
         // 2. Git Clone 명령 실행
-        ProcessBuilder pb = new ProcessBuilder("git", "clone", githubUrl, tempDirPath.toString());
+        ProcessBuilder pb = new ProcessBuilder("git", "clone", "-b", branchName, githubUrl, tempDirPath.toString());
         Process process = pb.start();
 
         if (process.waitFor() != 0) {
@@ -86,7 +86,7 @@ public class CodeRunnerRepository {
             deleteDirectory(tempDirPath.toFile());
             throw new IOException("Git 클론 실패: " + errorOutput);
         }
-        logger.info("Repository cloned to: " + tempDirPath);
+        logger.info("Repository cloned to: " + tempDirPath + " on branch: " + branchName);
 
         // 3. 복제된 디렉토리에서 코드 추출 및 결합
         String extractedCode = extractCodeFromDirectory(tempDirPath, language);

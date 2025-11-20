@@ -13,12 +13,12 @@ import java.util.Map;
 @Repository
 public class AiEvaluationRepository {
 
-    // 📢 @Value 필드를 제거하고 final로 선언합니다.
+    // @Value 필드를 제거하고 final로 선언합니다.
     private final String apiKey;
     private final String apiBaseUrl;
     private final WebClient webClient;
 
-    // 📢 수정된 생성자: 모든 의존성을 매개변수로 주입받습니다.
+    // 수정된 생성자: 모든 의존성을 매개변수로 주입받습니다.
     public AiEvaluationRepository(WebClient webClient,
                                   @Value("${ai.gemini.key}") String apiKey,
                                   @Value("${ai.gemini.base-url}") String apiBaseUrl) {
