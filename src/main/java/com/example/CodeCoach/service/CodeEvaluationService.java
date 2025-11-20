@@ -6,6 +6,13 @@ import com.example.CodeCoach.repository.AiEvaluationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import com.example.CodeCoach.repository.CodeRunnerRepository;
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
 
 /**
  * 코드 평가 요청을 처리하고 AI 피드백을 통합하는 서비스 클래스.
@@ -13,12 +20,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class CodeEvaluationService {
 
+    private final CodeRunnerRepository codeRunnerRepository;
     private final AiEvaluationRepository aiEvaluationRepository;
     private final ObjectMapper objectMapper;
 
-    public CodeEvaluationService(AiEvaluationRepository aiEvaluationRepository, ObjectMapper objectMapper) {
+    public CodeEvaluationService(AiEvaluationRepository aiEvaluationRepository, ObjectMapper objectMapper, CodeRunnerRepository codeRunnerRepository) {
         this.aiEvaluationRepository = aiEvaluationRepository;
         this.objectMapper = objectMapper;
+        this.codeRunnerRepository = codeRunnerRepository;
     }
 
     /**
@@ -28,13 +37,46 @@ public class CodeEvaluationService {
      */
     public EvaluationResult evaluateCode(EvaluationRequest request) {
 
-        //1. 모델 결정: 사용자가 View에서 선택한 모델을 사용하며, 선택되지 않은 경우 flash를 기본값으로 설정
+        // 모델 결정: 사용자가 View에서 선택한 모델을 사용하며, 선택되지 않은 경우 flash를 기본값으로 설정
         String modelName = request.getModelName();
         if (modelName == null || modelName.isEmpty()) {
-            modelName = "gemini-2.5-flash"; // 기본값 설정
+            modelName = "gemini-2.5-flash"; // 기본값 설정(gemini-2.5-flash가 아니면 503에러 발생)
         }
 
-        // 2. AI에게 전달할 프롬프트 구성
+        // docker실행
+        String runOutput = "컴파일러 실행 대기 중";
+        String compileStatus = "FAILURE";
+        Path codePath = null;
+
+        try {
+            // Repository를 통해 코드를 파일로 저장
+            codePath = codeRunnerRepository.fetchAndSaveCode(request.getCodeContent(), request.getLanguage());
+
+            // Docker를 호출하여 컴파일 및 실행
+            runOutput = runCodeInDocker(codePath.toAbsolutePath().toString(), request.getLanguage());
+
+            // 실행 결과에서 상태 판단
+            if (runOutput.startsWith("SUCCESS:")) {
+                compileStatus = "SUCCESS";
+                runOutput = runOutput.substring("SUCCESS:".length()).trim(); // 상태 태그 제거
+            } else {
+                compileStatus = "COMPILATION_ERROR";
+            }
+
+        } catch (IOException e) {
+            runOutput = "코드 파일 저장 중 오류 발생: " + e.getMessage();
+            compileStatus = "FILE_ERROR";
+        } catch (Exception e) {
+            runOutput = "Docker 실행 중 오류 발생: " + e.getMessage();
+            compileStatus = "RUNTIME_ERROR";
+        } finally {
+            // 1-4. 임시 파일 정리 (언어 정보를 cleanUp에 전달해야 정확한 파일 삭제 가능)
+            if (codePath != null) {
+                codeRunnerRepository.cleanUp(codePath); // 📢 CodeRunnerRepository에서 cleanUp(Path path) 메서드 사용 가정
+            }
+        }
+
+        // AI에게 전달할 프롬프트 구성
         String prompt = buildAiPrompt(request);
 
         String aiJsonFeedback = "";
@@ -71,12 +113,83 @@ public class CodeEvaluationService {
 
         // 5. 결과 반환
         return new EvaluationResult(
-                "AI_SUCCESS",
-                "컴파일러를 사용하지 않고 AI 평가만 진행됨. 사용 모델: " + modelName,
+                compileStatus,
+                runOutput, // Docker 실행 결과
                 score,
                 detailedFeedback
         );
     }
+
+    /**
+     * Docker 컨테이너를 호출하여 코드를 컴파일하고 실행합니다.
+     */
+    private String runCodeInDocker(String localPath, String language) throws IOException, InterruptedException {
+        // Docker 이미지 이름은 사전에 빌드되어 있어야 합니다.
+        final String DOCKER_IMAGE = "code-runner-env";
+        final String CONTAINER_MOUNT_POINT = "/app";
+
+        String compileCommand = "";
+        String runCommand = "";
+
+        if ("JAVA".equalsIgnoreCase(language)) {
+            compileCommand = "javac Main.java";
+            runCommand = "java Main";
+        } else if ("CPP".equalsIgnoreCase(language)) {
+            compileCommand = "g++ Main.cpp -o a.out";
+            runCommand = "./a.out";
+        } else {
+            return "FAILURE: 지원되지 않는 언어입니다.";
+        }
+
+        //  Docker 실행 명령어 구성: 로컬 코드를 컨테이너에 마운트하여 컴파일 및 실행
+        // Windows에서는 경로 문제 발생 가능성이 높으므로, ProcessBuilder를 사용하여 경로를 명확히 지정합니다.
+
+        // 명령어 인자 배열 구성
+        String[] commandArgs = {
+                "docker", "run", "--rm",
+                "-v", localPath + ":" + CONTAINER_MOUNT_POINT, // 로컬 경로 마운트
+                DOCKER_IMAGE,
+                "sh", "-c",
+                compileCommand + " && " + runCommand // 컴파일 및 실행을 연속적으로 실행
+        };
+
+        // ProcessBuilder를 사용하여 명령어 실행 (권한 문제 및 경로 해석에 더 안정적)
+        ProcessBuilder pb = new ProcessBuilder(commandArgs);
+
+        // Windows에서는 docker 실행 환경 경로가 중요하므로, 환경 변수를 그대로 사용합니다.
+        // pb.directory(new File("C:/")); // 루트 디렉토리 설정 (선택 사항)
+
+        Process process = pb.start(); // ProcessBuilder를 통해 실행
+
+        String output = readStream(process.getInputStream());
+        String errorOutput = readStream(process.getErrorStream());
+
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            // 컴파일 또는 실행 실패 시
+            return "FAILURE: \n컴파일/실행 실패 (종료 코드: " + exitCode + ")\n" + errorOutput;
+        } else {
+            // 성공 시
+            return "SUCCESS: " + output;
+        }
+    }
+
+    /**
+     * Process의 InputStream을 문자열로 읽습니다.
+     */
+    private String readStream(java.io.InputStream is) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString();
+        }
+    }
+
+
 
     /**
      * AI에게 전달할 프롬프트를 구성합니다.
