@@ -6,6 +6,8 @@
     <title>CodeCoach AI 평가 시스템</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Markdown 렌더링을 위한 marked.js CDN 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* Inter 폰트 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -35,8 +37,23 @@
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-y: auto;
-            white-space: pre-wrap;
+        }
+
+        /* Markdown 내부의 코드 블록 스타일링 */
+        .result-panel pre {
+            background-color: #0d1117;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
             font-family: monospace;
+        }
+        .result-panel h2 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .result-panel strong {
+            color: #90cdf4;
         }
     </style>
 </head>
@@ -45,7 +62,18 @@
 <div class="max-w-7xl mx-auto">
     <h1 class="text-4xl font-extrabold mb-8 text-indigo-400">CodeCoach AI 평가 시스템</h1>
 
-    <!-- 📢 1. 평가 기준 및 모델 선택 섹션 -->
+    <!-- 입력 방식 선택 토글 버튼 -->
+    <div class="flex justify-start items-center mb-4">
+        <span class="text-sm font-medium mr-4 text-gray-400">입력 방식:</span>
+        <button id="mode-code-btn" class="px-4 py-2 text-sm font-semibold rounded-l-lg bg-indigo-600 text-white transition duration-200">
+            코드 텍스트 입력
+        </button>
+        <button id="mode-url-btn" class="px-4 py-2 text-sm font-semibold rounded-r-lg bg-gray-700 text-gray-300 transition duration-200">
+            GitHub URL 입력
+        </button>
+    </div>
+
+    <!-- 1. 평가 기준 및 모델 선택 섹션 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
 
         <div class="col-span-1">
@@ -74,7 +102,7 @@
             </select>
         </div>
 
-        <!-- 📢 모델 버전 직접 선택 -->
+        <!-- 모델 버전 직접 선택 -->
         <div class="col-span-1">
             <label for="model-select" class="block text-sm font-medium mb-2 text-gray-300">모델 버전</label>
             <select id="model-select" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
@@ -84,7 +112,7 @@
         </div>
     </div>
 
-    <!-- 📢 2. AI 파라미터 조절 섹션 (2열 그리드) -->
+    <!-- AI 파라미터 조절 섹션 (2열 그리드) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-800 p-4 rounded-lg shadow-inner">
         <h3 class="col-span-full text-lg font-semibold text-indigo-300 mb-2">AI 응답 스타일 조절</h3>
 
@@ -106,10 +134,18 @@
         </div>
     </div>
 
-    <!-- 코드 입력 영역 -->
-    <div class="mb-6">
+    <!-- 코드 텍스트 입력 영역 -->
+    <div id="code-input-group" class="mb-6">
         <label for="code-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 코드 입력 (Java / C++)</label>
-        <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 또는 C++ 코드를 입력하세요."></textarea>
+        <textarea id="code-input" class="w-full transition duration-300 focus:ring-2 focus:ring-indigo-500" placeholder="여기에 Java 또는 C++ 코드를 직접 입력하세요."></textarea>
+    </div>
+
+    <!-- URL 입력 영역 -->
+    <div id="url-input-group" class="mb-6 hidden">
+        <label for="url-input" class="block text-lg font-medium mb-2 text-gray-300">평가할 GitHub Repository URL 입력</label>
+        <input type="text" id="url-input" placeholder="ex) https://github.com/user/repo"
+               class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white">
+        <p class="text-xs text-gray-500 mt-1">저장소의 전체 파일을 분석하여 평가합니다. (Public Repository만 지원)</p>
     </div>
 
     <!-- RUN 버튼 및 상태 메시지 -->
@@ -122,11 +158,13 @@
     </div>
 
     <!-- 결과 영역 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8" id="result-container"> <!-- 📢 result-container ID 추가 -->
+
+        <!-- 📢 Console Output 컨테이너 ID 추가 및 조건부 숨김을 위한 클래스 제거 -->
+        <div id="console-output-container">
             <h2 class="text-xl font-bold mb-3 text-gray-300">⚙️ Console Output (실행 결과)</h2>
             <pre id="console-output" class="result-panel bg-gray-800 text-green-400 border border-gray-700 shadow-inner">
-컴파일러를 연동하면 여기에 실행 결과가 표시됩니다. (현재는 더미)
+컴파일러를 연동하면 여기에 실행 결과가 표시됩니다.
 </pre>
         </div>
 
@@ -140,11 +178,22 @@
 </div>
 
 <script>
+    let currentMode = 'code'; // 'code' 또는 'url'
+
     document.addEventListener('DOMContentLoaded', () => {
         const codeInput = document.getElementById('code-input');
         const langSelect = document.getElementById('lang-select');
 
-        // 1. 자동 들여쓰기 기능 구현
+        const modeCodeBtn = document.getElementById('mode-code-btn');
+        const modeUrlBtn = document.getElementById('mode-url-btn');
+        const codeInputGroup = document.getElementById('code-input-group');
+        const urlInputGroup = document.getElementById('url-input-group');
+
+        const consoleOutputContainer = document.getElementById('console-output-container'); // 📢 컨테이너 DOM 요소
+        const consoleOutput = document.getElementById('console-output'); // Console Output DOM
+        const resultContainer = document.getElementById('result-container'); // 📢 결과 그리드 컨테이너
+
+        // 1. 자동 들여쓰기 기능 구현 (유지)
         codeInput.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -155,7 +204,7 @@
             }
         });
 
-        // 2. 언어 변경 시 기본 코드 변경
+        // 2. 언어 변경 시 기본 코드 변경 (유지)
         const setPlaceholderCode = (lang) => {
             if (lang === 'JAVA') {
                 codeInput.value =
@@ -180,12 +229,57 @@ int main() {
 
         langSelect.addEventListener('change', (e) => setPlaceholderCode(e.target.value));
         setPlaceholderCode(langSelect.value); // 초기 코드 설정
+
+        // 3. 입력 모드 전환 로직
+        const toggleInputMode = (mode) => {
+            currentMode = mode;
+            const runButton = document.getElementById('run-button');
+
+            // 📢 Console Output 컨테이너 표시/숨김 및 그리드 레이아웃 조정
+            if (mode === 'code') {
+                runButton.textContent = '▶ RUN & EVALUATE';
+
+                // Console Output 표시
+                consoleOutputContainer.classList.remove('hidden');
+                resultContainer.classList.replace('lg:grid-cols-1', 'lg:grid-cols-2');
+
+                // 메시지 초기화
+                consoleOutput.textContent = '컴파일러를 연동하면 여기에 실행 결과가 표시됩니다.';
+                consoleOutput.style.color = '#38a169';
+
+                modeCodeBtn.classList.replace('bg-gray-700', 'bg-indigo-600');
+                modeCodeBtn.classList.replace('text-gray-300', 'text-white');
+                modeUrlBtn.classList.replace('bg-indigo-600', 'bg-gray-700');
+                modeUrlBtn.classList.replace('text-white', 'text-gray-300');
+                codeInputGroup.classList.remove('hidden');
+                urlInputGroup.classList.add('hidden');
+            } else {
+                runButton.textContent = '▶ EVALUATE'; // 버튼 텍스트 변경
+
+                // Console Output 숨김 및 AI Feedback을 전체 너비로 확장
+                consoleOutputContainer.classList.add('hidden');
+                resultContainer.classList.replace('lg:grid-cols-2', 'lg:grid-cols-1');
+
+                modeUrlBtn.classList.replace('bg-gray-700', 'bg-indigo-600');
+                modeUrlBtn.classList.replace('text-gray-300', 'text-white');
+                modeCodeBtn.classList.replace('bg-indigo-600', 'bg-gray-700');
+                modeCodeBtn.classList.replace('text-white', 'text-gray-300');
+                urlInputGroup.classList.remove('hidden');
+                codeInputGroup.classList.add('hidden');
+            }
+        };
+
+        modeCodeBtn.addEventListener('click', () => toggleInputMode('code'));
+        modeUrlBtn.addEventListener('click', () => toggleInputMode('url'));
+
+        toggleInputMode('code'); // 초기 모드 설정
     });
 
-    // 3. RUN 버튼 클릭 시 실행될 함수 (로그인 로직 제거)
+    // 4. RUN 버튼 클릭 시 실행될 함수
     async function runEvaluation() {
         const runButton = document.getElementById('run-button');
         const codeInput = document.getElementById('code-input');
+        const urlInput = document.getElementById('url-input');
         const statusMessage = document.getElementById('status-message');
         const consoleOutput = document.getElementById('console-output');
         const aiFeedback = document.getElementById('ai-feedback');
@@ -193,7 +287,6 @@ int main() {
         const purposeSelect = document.getElementById('purpose-select');
         const langSelect = document.getElementById('lang-select');
 
-        // 📢 AI 파라미터 DOM 요소
         const modelSelect = document.getElementById('model-select');
         const tempSelect = document.getElementById('temp-select');
         const topPSelect = document.getElementById('topP-select');
@@ -203,28 +296,51 @@ int main() {
         runButton.textContent = '처리 중...';
         statusMessage.className = 'text-sm text-yellow-500';
         statusMessage.textContent = 'AI 평가 서버에 요청 중입니다. 잠시만 기다려 주세요...';
-        consoleOutput.textContent = '요청 전송...';
-        aiFeedback.textContent = '평가 기준: ' + langSelect.value + ' / ' + archSelect.value + ' / ' + purposeSelect.value;
+        // 📢 Console Output은 모드별로 별도 처리
+        aiFeedback.innerHTML = '평가 기준: ' + langSelect.value + ' / ' + archSelect.value + ' / ' + purposeSelect.value;
+        aiFeedback.classList.remove('text-red-500');
 
         const apiEndpoint = '/api/v1/evaluation';
+
+        // 📢 페이로드 구성
+        let payload = {
+            architecturePattern: archSelect.value,
+            evaluationPurpose: purposeSelect.value,
+            language: langSelect.value,
+            modelName: modelSelect.value,
+            temperature: parseFloat(tempSelect.value),
+            topP: parseFloat(topPSelect.value)
+        };
+
+        if (currentMode === 'code') {
+            // 코드 입력 모드: Docker 실행 요청
+            if (!codeInput.value.trim()) {
+                alert('평가할 코드를 입력해 주세요.');
+                runButton.disabled = false;
+                runButton.textContent = '▶ RUN & EVALUATE';
+                return;
+            }
+            payload.codeContent = codeInput.value;
+            payload.githubUrl = null;
+            consoleOutput.textContent = '코드 컴파일 및 실행을 위해 Docker를 호출합니다...';
+        } else {
+            // URL 입력 모드: Git 분석 요청
+            if (!urlInput.value.trim()) {
+                alert('평가할 GitHub URL을 입력해 주세요.');
+                runButton.disabled = false;
+                runButton.textContent = '▶ EVALUATE';
+                return;
+            }
+            payload.githubUrl = urlInput.value;
+            payload.codeContent = null;
+            consoleOutput.textContent = 'GitHub 저장소 파일 목록을 조회하고 코드를 다운로드 중입니다...';
+        }
 
         try {
             const response = await fetch(apiEndpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    codeContent: codeInput.value,
-                    architecturePattern: archSelect.value,
-                    evaluationPurpose: purposeSelect.value,
-                    language: langSelect.value,
-
-                    // 📢 AI 파라미터와 모델 이름 전송
-                    modelName: modelSelect.value,
-                    temperature: parseFloat(tempSelect.value),
-                    topP: parseFloat(topPSelect.value)
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
@@ -233,32 +349,39 @@ int main() {
 
             const result = await response.json();
 
-            // 4. 결과 출력
+            // 5. 결과 출력
             statusMessage.className = 'text-sm text-green-400';
             statusMessage.textContent = `평가 완료! (상태: ${result.compileStatus})`;
 
-            // Console Output
+            // Console Output 업데이트는 코드가 아니거나 에러 메시지를 포함할 수 있습니다.
             consoleOutput.className = 'result-panel bg-gray-800 text-green-400 border border-gray-700 shadow-inner';
             consoleOutput.textContent = result.runOutput || '실행 결과 없음.';
 
-            // AI Feedback
-            aiFeedback.className = 'result-panel bg-gray-800 text-yellow-300 border border-gray-700 shadow-inner';
+            // AI Feedback - marked.js를 사용하여 Markdown을 HTML로 변환
+            const renderedHtml = marked.parse(result.aiFeedback);
+
+            aiFeedback.className = 'result-panel bg-gray-800 text-yellow-300 border border-gray-700 shadow-inner p-4';
             aiFeedback.innerHTML = `
                     <p class="text-2xl font-bold mb-2 text-indigo-400">점수: ${result.score} / 100</p>
                     <p class="mb-3">상태: ${result.compileStatus}</p>
                     <p><strong>AI 평가 상세:</strong></p>
-                    <pre class="whitespace-pre-wrap">${result.aiFeedback}</pre>
+                    <div class="markdown-content">${renderedHtml}</div>
                 `;
 
         } catch (error) {
             statusMessage.className = 'text-sm text-red-500';
             statusMessage.textContent = `요청 실패: ${error.message}`;
             consoleOutput.textContent = `서버 연결 오류 또는 처리 실패: ${error.message}`;
-            aiFeedback.textContent = '평가 요청 중 심각한 오류가 발생했습니다.';
+            aiFeedback.innerHTML = '평가 요청 중 심각한 오류가 발생했습니다.';
+            aiFeedback.classList.add('text-red-500');
         } finally {
             // UI 원상 복구
             runButton.disabled = false;
-            runButton.textContent = '▶ RUN & EVALUATE';
+            if (currentMode === 'code') {
+                runButton.textContent = '▶ RUN & EVALUATE';
+            } else {
+                runButton.textContent = '▶ EVALUATE';
+            }
         }
     }
 </script>

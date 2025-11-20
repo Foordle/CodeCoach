@@ -130,12 +130,12 @@ public class CodeEvaluationService {
 
         String compileCommand = "";
         String runCommand = "";
-
+        // 각각 UTF-8 인코딩 맞춤
         if ("JAVA".equalsIgnoreCase(language)) {
-            compileCommand = "javac Main.java";
+            compileCommand = "javac -encoding UTF-8 Main.java";
             runCommand = "java Main";
         } else if ("CPP".equalsIgnoreCase(language)) {
-            compileCommand = "g++ Main.cpp -o a.out";
+            compileCommand = "g++ -finput-charset=UTF-8 Main.cpp -o a.out";
             runCommand = "./a.out";
         } else {
             return "FAILURE: 지원되지 않는 언어입니다.";
