@@ -7,7 +7,7 @@
 - [c. 실행예시](#c-실행예시)
 - [d. 문제 요구사항](#d-성장-포인트)
 - [e. 개발계획 순서](#e-개발계획-순서)
-
+- [f. 프로그램 실행 방법 (사용 가이드)](#f-프로그램-실행-방법-사용-가이드)
      
 ---
 ## a. 주제설명
@@ -57,11 +57,20 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
 
 ---
 ## c. 실행예시
-### 
-```
+### **[Gemini API 호출 및 Docker 실행 결과 (Java 코드 입력 시)]**
 
-```
----
+1.  **Console Output (Docker 실행 결과):**
+    ```
+    SUCCESS: Hello from container!
+    Java Sum: 30
+    ```
+2.  **AI Feedback (Gemini 평가 결과):**
+    ```json
+    {
+      "score": 95,
+      "feedback": "## 코드 품질 분석\n\n**1. 일반 피드백:** 변수명이 명확하고 코드가 간결합니다.\n\n**2. 상세 분석 (RSVC/유지보수성):** 이 코드는 단일 클래스이므로 아키텍처 패턴을 평가하기 어렵습니다. 다만, `10`과 `20`과 같은 **매직 넘버**를 상수로 분리하면 유지보수성이 향상됩니다."
+    }
+    ```
 
 ## d. 성장 포인트  💡
 이번 프로젝트를 통해 성장하고 싶은 내용은
@@ -77,13 +86,12 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
 ## e. 개발계획 순서
 
 
-
 개발순서는 다음과 같다.<br>
 - [x] 웹 서비스의 기본 데이터 파이프라인 작성<br>
 &darr;<br>
-- [ ] API를 이용한 AI 간이 평가 기능 구현<br>
+- [x] API를 이용한 AI 간이 평가 기능 구현<br>
  &darr;<br>
-- [ ] docker를 이용한 컴파일러 구현<br>
+- [x] docker를 이용한 컴파일러 구현<br>
   &darr;<br>
 - [ ] 웹프로젝트 docker환경으로 이전<br>
   &darr;<br>
@@ -91,4 +99,60 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
   &darr;<br>
 - [ ] 웹기반으로 업그레이드 or AI평가 성능 파인튜닝?<br>
   &darr;<br>
-- [ ] OTP기반 로그인 기능 구현
+- [ ] OAuth기반 로그인 기능 구현
+  &darr;<br>
+- [ ] 챗봇처럼 프로젝트 로그를 남겨서 내 코드의 개선 사항에 대해 종합적 평가, 그래프 그리기 기능 추가
+
+## f. 프로그램 실행 방법 (사용 가이드)
+
+본 프로젝트는 Spring Boot, Gradle, 그리고 Docker를 사용합니다. 프로그램을 실행하기 위해서는 반드시 **Docker Desktop**이 필요합니다.
+
+### 1\. 필수 전제 조건 (Prerequisites)
+
+- **Java 21 이상** (JDK)
+- **Gradle** (IntelliJ IDEA 사용 시 자동 지원)
+- **Docker Desktop** (반드시 실행 상태여야 함)
+- **Gemini API Key** (유효한 API 키)
+
+### 2\. 환경 설정 (API Key)
+
+민감 정보인 Gemini API 키는 **`.env`** 파일을 통해 환경 변수로 주입합니다.
+
+1.  프로젝트 루트 디렉토리에 **`.env`** 파일을 생성합니다.
+2.  유효한 API 키를 다음 형식으로 저장합니다:
+    ```bash
+    GEMINI_API_KEY="AIzaSyA...[실제 유효 키]" 
+    ```
+
+### 3\. Docker 컴파일러 이미지 빌드 (최초 1회)
+
+코드 실행 환경인 `code-runner-env` 이미지를 빌드합니다.
+
+```bash
+# 프로젝트 루트 디렉토리에서 실행
+docker build -f Dockerfile.runner -t code-runner-env .
+```
+확인: 이 명령이 완료되면 docker images 목록에 code-runner-env 이미지가 나타나야 합니다.
+
+### 4\. Spring Boot 애플리케이션 실행
+   A. IntelliJ IDEA를 사용하는 경우 (권장)
+   1. 실행 구성 (Run Configuration) 설정:
+        - CodeCoachApplication 실행 구성을 편집합니다. 
+        - Environment Variables 섹션에 GEMINI_API_KEY=[유효한 키]가 설정되어 있는지 확인합니다.
+
+   2. CodeCoachApplication.java 파일을 열고 **녹색 실행 버튼(Run)**을 클릭하여 서버를 구동합니다.
+
+   B. Gradle 명령어를 사용하는 경우
+   ```bash
+   # 환경 변수를 설정한 터미널에서 실행
+  # Windows CMD: set GEMINI_API_KEY="키"
+  ./gradlew bootRun
+   ```
+### 5.\ 프로그램 사용 및 테스트
+1. 접속: 웹 브라우저에서 http://localhost:8080/main_view.html에 접속합니다.
+
+2. 평가 실행: 코드 입력, 모델 선택 후 ▶ RUN & EVALUATE 버튼을 클릭합니다.
+
+3. 결과 확인:
+   - Console Output: Docker 컨테이너에서 컴파일 및 실행된 결과가 표시됩니다.
+   - AI Feedback: Gemini API 호출 결과가 JSON 파싱되어 점수와 상세 피드백이 표시됩니다.
