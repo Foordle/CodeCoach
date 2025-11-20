@@ -2,6 +2,7 @@ package com.example.CodeCoach.domain;
 
 public class EvaluationRequest {
     private String codeContent;
+    private String githubUrl;
     private String architecturePattern;
     private String evaluationPurpose;
     private String language;
@@ -19,7 +20,8 @@ public class EvaluationRequest {
     public void setCodeContent(String codeContent) {
         this.codeContent = codeContent;
     }
-
+    public String getGithubUrl() { return githubUrl; }
+    public void setGithubUrl(String githubUrl) { this.githubUrl = githubUrl; }
     public String getArchitecturePattern() {
         return architecturePattern;
     }
