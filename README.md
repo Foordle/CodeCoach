@@ -8,6 +8,7 @@
 - [d. 문제 요구사항](#d-성장-포인트)
 - [e. 개발계획 순서](#e-개발계획-순서)
 - [f. 프로그램 실행 방법 (사용 가이드)](#f-프로그램-실행-방법-사용-가이드)
+- [g. 프로그램 실행 영상 (YouTube)](#g-프로그램-실행-영상-(YouTube))
      
 ---
 ## a. 주제설명
@@ -71,7 +72,7 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
       "feedback": "## 코드 품질 분석\n\n**1. 일반 피드백:** 변수명이 명확하고 코드가 간결합니다.\n\n**2. 상세 분석 (RSVC/유지보수성):** 이 코드는 단일 클래스이므로 아키텍처 패턴을 평가하기 어렵습니다. 다만, `10`과 `20`과 같은 **매직 넘버**를 상수로 분리하면 유지보수성이 향상됩니다."
     }
     ```
-
+---
 ## d. 성장 포인트  💡
 이번 프로젝트를 통해 성장하고 싶은 내용은
 1. ***java, spring boot***을 이용한 웹개발 익숙해지기<br>
@@ -82,7 +83,7 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
 
 3. ***docker***를 이용한 환경 설정
 - 어떠한 시스템 환경에서도 프로그램을 일괄적으로 실행시키기 위해서는 docker를 이용한 환경설정이 필수적이다. 이번기회에 docker를 이용해서 컴파일러도 구현해 보고 웹프로젝트도 docker를 바탕으로 구현해 보면서 사용법을 익힌다.
-
+---
 ## e. 개발계획 순서
 
 
@@ -93,16 +94,17 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
  &darr;<br>
 - [x] docker를 이용한 컴파일러 구현<br>
   &darr;<br>
+- [x] 웹기반으로 업그레이드 or AI평가 성능 파인튜닝?<br>
+  &darr;<br>
+아래의 부분은 이후 평가가 끝난후 개선할 사항들
 - [ ] 웹프로젝트 docker환경으로 이전<br>
-  &darr;<br>
+    &darr;<br>
 - [ ] 모든 프로젝트를 개인서버로 이전<br>
-  &darr;<br>
-- [ ] 웹기반으로 업그레이드 or AI평가 성능 파인튜닝?<br>
   &darr;<br>
 - [ ] OAuth기반 로그인 기능 구현
   &darr;<br>
 - [ ] 챗봇처럼 프로젝트 로그를 남겨서 내 코드의 개선 사항에 대해 종합적 평가, 그래프 그리기 기능 추가
-
+---
 ## f. 프로그램 실행 방법 (사용 가이드)
 
 본 프로젝트는 Spring Boot, Gradle, 그리고 Docker를 사용합니다. 프로그램을 실행하기 위해서는 반드시 **Docker Desktop**이 필요합니다.
@@ -123,6 +125,43 @@ Gemini, Chat GPT등의 API를 사용하여 해당 기능을 구현한다.
     ```bash
     GEMINI_API_KEY="AIzaSyA...[실제 유효 키]" 
     ```
+### 📁 프로젝트 구조 및 환경 변수 설정
+
+`.env` 파일은 프로젝트의 **최상위 루트 디렉토리**에 생성해야 합니다.
+
+```text
+CodeCoach/
+├── .env                  <-- 📢 여기에 생성하세요 (GEMINI_API_KEY=...)
+├── build.gradle
+├── Dockerfile.runner
+└── src/
+
+------------ 좀더 자세히!
+
+CodeCoach/
+├── .env            <---- # 📢 필수: API 키 설정 파일 (프로젝트 루트에 위치)
+├── .gitignore
+├── build.gradle
+├── settings.gradle
+├── Dockerfile.runner     # Docker 컴파일러 이미지 빌드 파일
+├── gradlew
+├── gradlew.bat
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── com/example/CodeCoach/
+│       │       ├── CodeCoachApplication.java
+│       │       ├── controller/
+│       │       ├── domain/
+│       │       ├── repository/
+│       │       └── service/
+│       └── resources/
+│           ├── static/
+│           │   └── main_view.html
+│           └── application.properties
+├── temp_code_storage/    # (자동 생성) 코드 실행 임시 폴더
+└── temp_repos/           # (자동 생성) Git Clone 임시 폴더
+```
 
 ### 3\. Docker 컴파일러 이미지 빌드 (최초 1회)
 
@@ -149,10 +188,33 @@ docker build -f Dockerfile.runner -t code-runner-env .
   ./gradlew bootRun
    ```
 ### 5.\ 프로그램 사용 및 테스트
-1. 접속: 웹 브라우저에서 http://localhost:8080/main_view.html에 접속합니다.
-
-2. 평가 실행: 코드 입력, 모델 선택 후 ▶ RUN & EVALUATE 버튼을 클릭합니다.
-
-3. 결과 확인:
+1. docker desktop을 실행한다.
+2. CodeCoachApplication을 실행한다.
+3. 접속: 웹 브라우저에서 http://localhost:8080/main_view.html 에 접속합니다.
+4. 평가 실행: 코드 입력, 모델 선택 후 ▶ RUN & EVALUATE 버튼을 클릭합니다.
+5. 결과 확인:
    - Console Output: Docker 컨테이너에서 컴파일 및 실행된 결과가 표시됩니다.
    - AI Feedback: Gemini API 호출 결과가 JSON 파싱되어 점수와 상세 피드백이 표시됩니다.
+---
+## g. 프로그램 실행 영상 (YouTube)
+
+### 0. 실행 환경
+- Docker Desktop이 실행되어 있어야 함
+- 웹 브라우저에서 접속:  
+  http://localhost:8080/main_view.html
+
+[![CodeCoach Setting](http://img.youtube.com/vi/JNP7pG5D0Xk/0.jpg)](https://www.youtube.com/watch?v=JNP7pG5D0Xk)
+
+---
+
+### 1. 단일 코드 평가
+코드를 직접 입력하여 Docker 기반으로 컴파일·실행한 뒤 AI 평가를 받는 과정 시연 영상입니다.
+
+[![CodeCoach Single Code](http://img.youtube.com/vi/lM3cOb09-O8/0.jpg)](https://www.youtube.com/watch?v=lM3cOb09-O8)
+
+---
+
+### 2. GitHub 링크 평가
+GitHub Repository URL과 브랜치를 입력하여 전체 프로젝트 구조를 분석·평가하는 기능 시연 영상입니다.
+
+[![CodeCoach GitHub Evaluation](http://img.youtube.com/vi/IxunNgup_jE/0.jpg)](https://www.youtube.com/watch?v=IxunNgup_jE)
