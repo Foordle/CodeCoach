@@ -1,5 +1,7 @@
 # CodeCoach
-우아한테크코스8기프리코스_4,5주차
+우아한테크코스8기프리코스_오픈미션<br>
+
+velog : https://velog.io/@sdc06016/CodeCoach-%EC%A0%9C%EC%9E%91%EA%B8%B0#-codecoach-%EA%B0%9C%EB%B0%9C-%ED%9A%8C%EA%B3%A0
 
 ## 📑 목차
 - [a. 주제설명](#a-주제설명)
@@ -204,6 +206,7 @@ docker build -f Dockerfile.runner -t code-runner-env .
   http://localhost:8080/main_view.html
 
 [![CodeCoach Setting](http://img.youtube.com/vi/JNP7pG5D0Xk/0.jpg)](https://www.youtube.com/watch?v=JNP7pG5D0Xk)
+<br>썸네일을 클릭하여 유투브로 이동
 
 ---
 
@@ -211,10 +214,11 @@ docker build -f Dockerfile.runner -t code-runner-env .
 코드를 직접 입력하여 Docker 기반으로 컴파일·실행한 뒤 AI 평가를 받는 과정 시연 영상입니다.
 
 [![CodeCoach Single Code](http://img.youtube.com/vi/lM3cOb09-O8/0.jpg)](https://www.youtube.com/watch?v=lM3cOb09-O8)
-
+<br>썸네일을 클릭하여 유투브로 이동
 ---
 
 ### 2. GitHub 링크 평가
 GitHub Repository URL과 브랜치를 입력하여 전체 프로젝트 구조를 분석·평가하는 기능 시연 영상입니다.
 
 [![CodeCoach GitHub Evaluation](http://img.youtube.com/vi/IxunNgup_jE/0.jpg)](https://www.youtube.com/watch?v=IxunNgup_jE)
+<br>썸네일을 클릭하여 유투브로 이동
