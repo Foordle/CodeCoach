@@ -6,7 +6,7 @@ COPY . .
 RUN ./gradlew bootJar -x test
 
 # 2. 실행 단계
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
 # [중요] 내부에서 docker 명령어를 써야 하므로 Docker Client 설치
