@@ -2,6 +2,10 @@
 FROM gradle:8.5-jdk21 AS builder
 WORKDIR /app
 COPY . .
+
+# gradlew에 실행 권한 부여
+RUN chmod +x gradlew
+
 # 빌드 수행 (테스트 제외하여 속도 향상)
 RUN ./gradlew bootJar -x test
 
